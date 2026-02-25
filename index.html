@@ -148,8 +148,13 @@
             <div class="info-grid fade-in">
                 <div class="info-note">
                     <h3>日々の農園日記</h3>
-                    <p>農作業の様子や、孫たちとのふれあいの記録を「note」で綴っています。<br>ぜひのぞいてみてください。</p>
-                    <a href="https://note.com/uturn4102" target="_blank" class="btn-secondary">Uターンじぃじのnoteを読む</a>
+                    <p>農作業の様子や、孫たちとのふれあいの記録を「note」で綴っています。<br>最新の記事はこちらからご覧いただけます。</p>
+
+                    <div id="note-feed" class="note-feed">
+                        <p class="loading-note">最新記事を読み込み中...</p>
+                    </div>
+
+                    <a href="https://note.com/uturn4102" target="_blank" class="btn-secondary">noteですべての記事を読む</a>
                 </div>
             </div>
         </div>
@@ -196,6 +201,43 @@
                 }
             });
         });
+
+        // Fetch note RSS feed via rss2json API
+        const rssUrl = 'https://note.com/uturn4102/rss';
+        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('note-feed');
+                if (data.status === 'ok' && data.items && data.items.length > 0) {
+                    let html = '<div class="note-articles">';
+                    const items = data.items.slice(0, 3); // Top 3 articles
+                    items.forEach(item => {
+                        const defaultImg = 'images/about_concept.jpg'; // Fallback
+                        const imgSrc = item.thumbnail || defaultImg;
+                        const date = new Date(item.pubDate.replace(/-/g, '/')).toLocaleDateString('ja-JP');
+
+                        html += `
+                            <a href="${item.link}" target="_blank" class="note-article" title="${item.title}">
+                                <div class="note-image" style="background-image: url('${imgSrc}')"></div>
+                                <div class="note-details">
+                                    <span class="note-date">${date}</span>
+                                    <h4 class="note-detail-title">${item.title}</h4>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="loading-note">記事を読み込めませんでした。</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('note-feed').innerHTML = '<p class="loading-note">記事情報の取得に失敗しました。</p>';
+                console.error('Error fetching RSS:', error);
+            });
 
         // Intersection Observer for fade-in animations
         const observerOptions = {
